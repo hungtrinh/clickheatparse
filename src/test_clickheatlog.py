@@ -6,12 +6,10 @@ python vertion 2.7.3
 '''
 import unittest
 import os
-import glob
 import io
-import sys
 import shutil
 
-from clickheatlog import TrackPoint, ParserLine, ParseFile, TrackPointFileStore
+from clickheatlog import ParserLine, TrackPoint, TrackPointFileStore, ClickHeatLog
 
 class TestParseLine(unittest.TestCase):
     
@@ -28,18 +26,6 @@ class TestParseLine(unittest.TestCase):
         
         trackPointResult = ParserLine('').getTrackPoint()
         self.assertIsNone(trackPointResult)
-            
-class TestParseFile(unittest.TestCase):
-    
-    def testGetTrackPoinsReturnDict(self):     
-        lines = ['GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=32&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:56%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02',
-           'GET /clickempty.html?s=mimo&g=homenonlogin&x=1001&y=15&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:54%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02']
-        trackPoints = ParseFile().getTrackPoints(lines)
-        self.assertEqual(2, len(trackPoints))
-        
-    def testGettrackPointsReturnEmptyList(self):
-        trackPoints = ParseFile().getTrackPoints(['a', 'b'])
-        self.assertEqual(0, len(trackPoints))
 
 class TestTrackPointFileStoreSuccess(unittest.TestCase):
 
@@ -127,8 +113,25 @@ class TestTrackPointFileStoreSuccess(unittest.TestCase):
     
 class TestClickHeatLogMillionLineRequest(unittest.TestCase):
     def setUp(self):
-        pass
+        self.fileLog = fileLog = os.path.abspath('1msource.log')
+        self.descDir = descDir = os.path.abspath('../test')
+        
+        trackPointStoreStrategy = TrackPointFileStore(descDir)
+        trackPointLineParseStrategy = ParserLine()
+        self.heatClickLog = ClickHeatLog(fileLog, trackPointLineParseStrategy, trackPointStoreStrategy)
+
+    def testCreateDescDirByDay(self):
+        self.assertFalse(os.path.exists(self.descDir+'/mimo,homenonlogin'))
+        self.heatClickLog.run()
+
+        self.assertTrue(os.path.isdir(self.descDir+'/mimo,homenonlogin'))
+        fileUrlOpen = io.open(self.descDir+'/mimo,homenonlogin/url.txt', 'r')
+        self.assertEqual('http://cms.local:8080/index/varnish>0>0>0', fileUrlOpen.readline()) 
+        
+        fileUrlOpen.close()
+    
     def tearDown(self):
+        
         pass
 
 if __name__ == "__main__":

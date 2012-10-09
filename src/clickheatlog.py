@@ -8,7 +8,35 @@ import os
 import re
 #import sys
 
-class ClickHeatLogError(Exception): pass
+class ParserLine(object):
+    '''
+    Create client class which will parse log line 
+    Line parse example 
+    GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=32&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:56%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
+    '''
+    def __init__(self, lineContent=None, pattern='s=(.*)&g=(.*)&x=([0-9]*)&y=([0-9]*)&w=([0-9]*)&b=(.*)&c=([0-9])&random=(.*) (http.*) (\d{4}-\d{2}-\d{2})'):
+        self.line = lineContent
+        self.pattern = pattern
+    
+    def getTrackPoint(self,lineContent=None):
+        if lineContent:
+            self.line = lineContent
+        '''
+        @return: TrackPoint
+        '''
+        match = re.search(self.pattern, self.line)
+        if not match:
+            return None
+        site = match.group(1)
+        group = match.group(2)
+        x = match.group(3)
+        y = match.group(4)
+        width = match.group(5)
+        browser = match.group(6)
+        c = match.group(7)
+        fromSite = match.group(9)
+        dateString = match.group(10)
+        return TrackPoint(x, y, width, browser, c, fromSite, dateString, site, group)
 
 class TrackPoint(object):
     '''
@@ -31,68 +59,6 @@ class TrackPoint(object):
     def __str__(self, *args, **kwargs):
         return object.__str__(self, *args, **kwargs) + "\n x=" + self.x + ", y=" + self.y + ", width=" + self.width + ", browser=" + self.browser + ", c=" + self.c + ", referUrl=" + self.referUrl + ", day=" + self.day + ", site=" + self.site + ", group=" + self.group
 
-class ParserLine(object):
-    '''
-    Create client class which will parse log line 
-    Line parse example 
-    GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=32&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:56%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-    '''
-    def __init__(self, lineContent, pattern='s=(.*)&g=(.*)&x=([0-9]*)&y=([0-9]*)&w=([0-9]*)&b=(.*)&c=([0-9])&random=(.*) (http.*) (\d{4}-\d{2}-\d{2})'):
-        self.line = lineContent
-        self.pattern = pattern
-    
-    # @return: TrackPoint      
-    def getTrackPoint(self):
-        match = re.search(self.pattern, self.line)
-        if not match:
-            return None
-        site = match.group(1)
-        group = match.group(2)
-        x = match.group(3)
-        y = match.group(4)
-        width = match.group(5)
-        browser = match.group(6)
-        c = match.group(7)
-        fromSite = match.group(9)
-        dateString = match.group(10)
-        return TrackPoint(x, y, width, browser, c, fromSite, dateString, site, group)
-    
-class ParseFile(object):
-    '''
-    Create client class which will parse log file database
-    GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=32&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:56%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-    GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=32&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:56%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-    GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=32&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:56%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-    '''
-    def __init__(self, sourceFilePathAbsolute=None, descDirPathAbsolute=None):
-        '''
-        Constructors
-        '''
-        self.sourceFile = sourceFilePathAbsolute
-        self.descDir = descDirPathAbsolute
-    
-    def writeDataToDescDir(self):
-        fileOpen = io.open(self.sourceFile)
-        
-        for line in fileOpen.readlines():
-            checkPoint = ParserLine(line).getTrackPoint()
-            if not checkPoint:
-                continue
-#            rowLog = '|'.join([checkPoint.x,checkPoint.y,checkPoint.width,checkPoint.browser,checkPoint.c]) + "\n"
-#            referUrl = checkPoint.referUrl
-#            dateLog = checkPoint.day
-                
-        fileOpen.close()
-    
-    
-    def getTrackPoints(self, lines):
-        result = []
-        for line in lines:
-            point = ParserLine(line).getTrackPoint()
-            if point:
-                result.append(point)
-        return result 
-
 class TrackPointException(IOError): pass    
 
 class TrackPointFileStore(object):
@@ -104,7 +70,11 @@ class TrackPointFileStore(object):
         self.descDir = descDir
         self.fileDirCache = {}
         
-    def __getFileWritableOpenedObject(self, filePath):      
+    def __getFileWritableOpenedObject(self, filePath):     
+        '''
+        cache fileinput open multifile with mode append content
+        @return: file
+        ''' 
         if self.fileDirCache.has_key(filePath): 
             return self.fileDirCache[filePath]
         
@@ -114,12 +84,19 @@ class TrackPointFileStore(object):
         return fileDayLogWrite
     
     def __closeFileWritableOpened(self):
+        '''
+        close all fileinput opened
+        '''
         for fileName in self.fileDirCache.keys():
             fileObj = self.fileDirCache.pop(fileName)
             if fileObj:
                 fileObj.close()
 
     def __saveTrackPoint (self, trackPoint):
+        '''
+        @var trackPoint: TrackPoint
+        '''
+        
         if not os.path.isdir(self.descDir):
             raise TrackPointException('No found directory ' + self.descDir)
 
@@ -144,6 +121,9 @@ class TrackPointFileStore(object):
 #        fileDayLogWrite.close()
         
     def saveTrackPoint(self, trackPoint):
+        '''
+        @var trackPoint:TrackPoint 
+        '''
         self.__saveTrackPoint(trackPoint)
         self.__closeFileWritableOpened()
     
@@ -151,3 +131,9 @@ class TrackPointFileStore(object):
         for trackPoint in trackPoints:
             self.__saveTrackPoint(trackPoint)
         self.__closeFileWritableOpened()
+
+class ClickHeatLogError(Exception): pass
+
+class ClickHeatLog(object):
+    def __init__(self,fileLog=None,trackPointLineParseStrategy=None,trackPointStoreStrategy=None):
+        pass
