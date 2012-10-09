@@ -125,6 +125,12 @@ class TestTrackPointFileStoreSuccess(unittest.TestCase):
         self.assertEqual('2|2|1024|chrome|1\n', fileDayLogOpen.readline())
         fileDayLogOpen.close()
     
+class TestClickHeatLogMillionLineRequest(unittest.TestCase):
+    def setUp(self):
+        pass
+    def tearDown(self):
+        pass
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
