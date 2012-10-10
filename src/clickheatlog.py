@@ -6,6 +6,7 @@ python vertion 2.7.3
 import io
 import os
 import re
+import fileinput
 #import sys
 
 class ParserLine(object):
@@ -20,11 +21,13 @@ class ParserLine(object):
     
     def getTrackPoint(self,lineContent=None):
         if lineContent:
-            self.line = lineContent
+            line = lineContent
+        else:
+            line = self.line
         '''
         @return: TrackPoint
         '''
-        match = re.search(self.pattern, self.line)
+        match = re.search(self.pattern, line)
         if not match:
             return None
         site = match.group(1)
@@ -36,8 +39,17 @@ class ParserLine(object):
         c = match.group(7)
         fromSite = match.group(9)
         dateString = match.group(10)
+        
         return TrackPoint(x, y, width, browser, c, fromSite, dateString, site, group)
-
+    
+    def getTrackPoints(self,linesContent):
+        result = []
+        for line in linesContent:
+            trackPoint = self.getTrackPoint(line)
+            if trackPoint:
+                result.append(trackPoint)
+        return result
+    
 class TrackPoint(object):
     '''
     Entity store tracker point meta data
@@ -78,7 +90,7 @@ class TrackPointFileStore(object):
         if self.fileDirCache.has_key(filePath): 
             return self.fileDirCache[filePath]
         
-        fileDayLogWrite = io.open(filePath, 'a+')
+        fileDayLogWrite = io.FileIO(filePath, 'a')
        
         self.fileDirCache[filePath] = fileDayLogWrite
         return fileDayLogWrite
@@ -96,10 +108,6 @@ class TrackPointFileStore(object):
         '''
         @var trackPoint: TrackPoint
         '''
-        
-        if not os.path.isdir(self.descDir):
-            raise TrackPointException('No found directory ' + self.descDir)
-
         folderDesc = self.descDir + "/" + trackPoint.site + "," + trackPoint.group
         folderDesc = os.path.abspath(folderDesc)
         fileUrlTxt = folderDesc + "/url.txt"     
@@ -111,23 +119,25 @@ class TrackPointFileStore(object):
             os.mkdir(folderDesc)
              
         if not os.path.isfile(fileUrlTxt):
-            fileUrlTxtWrite = io.open(fileUrlTxt, 'w+')
-            fileUrlTxtWrite.write(unicode(fileUrlContent))
+            fileUrlTxtWrite = io.FileIO(fileUrlTxt, 'w+')
+            fileUrlTxtWrite.write(fileUrlContent)
             fileUrlTxtWrite.close()
         
         fileDayLogWrite = self.__getFileWritableOpenedObject(fileDayLog)
 #        fileDayLogWrite = io.open(fileDayLog,'a+')
-        fileDayLogWrite.write(unicode(fileDayLineContent))
+        fileDayLogWrite.write(fileDayLineContent)
 #        fileDayLogWrite.close()
         
     def saveTrackPoint(self, trackPoint):
-        '''
-        @var trackPoint:TrackPoint 
-        '''
+        if not os.path.isdir(self.descDir):
+            raise TrackPointException('No found directory ' + self.descDir)
         self.__saveTrackPoint(trackPoint)
         self.__closeFileWritableOpened()
     
     def saveTrackPoints(self, trackPoints):
+        if not os.path.isdir(self.descDir):
+            raise TrackPointException('No found directory ' + self.descDir)
+
         for trackPoint in trackPoints:
             self.__saveTrackPoint(trackPoint)
         self.__closeFileWritableOpened()
@@ -136,4 +146,58 @@ class ClickHeatLogError(Exception): pass
 
 class ClickHeatLog(object):
     def __init__(self,fileLog=None,trackPointLineParseStrategy=None,trackPointStoreStrategy=None):
-        pass
+        '''
+        @fileLog: string
+        @trackPointLineParseStrategy: ParserLine
+        @trackPointStoreStrategy: TrackPointFileStore
+        '''
+        self.fileLog = fileLog
+        self.lineParser = trackPointLineParseStrategy
+        self.trackPointStore = trackPointStoreStrategy
+        self.hash = {}
+
+    def parserFileLog(self):
+        
+        '''
+        @self.lineParser: ParserLine
+        @self.trackPointStore: TrackPointFileStore
+        '''
+        processLogFilePath = self.trackPointStore.descDir + '/logproccesed.txt'
+        fileLogProccesed = io.FileIO(processLogFilePath,'a+')
+        lines = fileLogProccesed.readlines()
+        
+        
+        if (any(self.fileLog in item for item in lines)):
+            fileLogProccesed.close()
+            return None
+        
+        fileLogProccesed.write(self.fileLog)
+        fileLogProccesed.close()
+        
+        return self.__parserFileLogImprovePerformance()
+        
+#        fileLogOpen = io.open(self.fileLog)
+        fileLogOpen = fileinput.input(self.fileLog)
+        for line in fileLogOpen:
+            trackPoint = self.lineParser.getTrackPoint(line)
+            if not trackPoint:
+                continue
+            self.trackPointStore.saveTrackPoint(trackPoint)
+        fileLogOpen.close()
+        
+#        fileWriter = io.open(processLogFilePath,'a+')
+#        fileWriter.write(unicode(self.fileLog))
+#        fileWriter.close()
+        
+    def __parserFileLogImprovePerformance(self):
+        fileLogOpen = open(self.fileLog,'r')
+        BUFFER = int(1E6)
+        while True:
+            lines = fileLogOpen.readlines()
+            if lines == []:
+                break
+            trackPoints = self.lineParser.getTrackPoints(lines)
+            self.trackPointStore.saveTrackPoints(trackPoints)
+#            del trackPoints
+#            del lines
+        fileLogOpen.close()

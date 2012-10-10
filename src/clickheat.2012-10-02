@@ -1,13 +1,2 @@
 GET /clickempty.html?s=mimo&g=homenonlogin&x=1001&y=456&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:47%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=512&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:48%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-GET /clickempty.html?s=mimo&g=homenonlogin&x=1001&y=15&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:54%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=32&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:56%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-<<<<<<< HEAD
-GET /clickempty.html?s=mimo&g=homenonlogin&x=1001&y=456&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:47%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=512&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:48%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-GET /clickempty.html?s=mimo&g=homenonlogin&x=1001&y=15&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:54%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=32&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:56%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-GET /clickempty.html?s=mimo&g=homenonlogin&x=1001&y=456&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:47%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-GET /clickempty.html?s=mimo&g=homenonlogin&x=998&y=512&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:48%20GMT+0700%20(ICT) HTTP/1.1 http://cms.local:8080/index/varnish 2012-10-02
-=======
->>>>>>> 00095af5bfbd59e4390c11efb4d0f556235d21f4
+GET /clickempty.html?s=mimo&g=profile&x=998&y=512&w=1265&b=chrome&c=1&random=Tue%20Oct%2002%202012%2017:20:48%20GMT+0700%20(ICT) HTTP/1.1 http://dantri.com 2012-10-03
