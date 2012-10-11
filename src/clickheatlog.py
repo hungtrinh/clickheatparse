@@ -104,42 +104,53 @@ class TrackPointFileStore(object):
             if fileObj:
                 fileObj.close()
 
-    def __saveTrackPoint (self, trackPoint):
-        '''
-        @var trackPoint: TrackPoint
-        '''
+    def __getDailyLogFolderPath(self, trackPoint):
         folderDesc = self.descDir + "/" + trackPoint.site + "," + trackPoint.group
         folderDesc = os.path.abspath(folderDesc)
-        fileUrlTxt = folderDesc + "/url.txt"     
-        fileUrlContent = trackPoint.referUrl + ">0>0>0"
-        fileDayLog = folderDesc + "/" + trackPoint.day + '.log'
-        fileDayLineContent = trackPoint.x + '|' + trackPoint.y + '|' + trackPoint.width + '|' + trackPoint.browser + '|' + trackPoint.c + '\n'
         
         if not os.path.isdir(folderDesc):
             os.mkdir(folderDesc)
-             
+        return folderDesc
+    
+    def __writeReferUriToDaylyLogFolder(self,trackPoint,folderDesc=None):
+        if not folderDesc:
+            folderDesc = self.__getDailyLogFolderPath(trackPoint)
+        
+        fileUrlTxt = folderDesc + "/url.txt"     
+        fileUrlContent = trackPoint.referUrl + ">0>0>0"
+        
         if not os.path.isfile(fileUrlTxt):
             fileUrlTxtWrite = io.FileIO(fileUrlTxt, 'w+')
             fileUrlTxtWrite.write(fileUrlContent)
             fileUrlTxtWrite.close()
         
-        fileDayLogWrite = self.__getFileWritableOpenedObject(fileDayLog)
-#        fileDayLogWrite = io.open(fileDayLog,'a+')
-        fileDayLogWrite.write(fileDayLineContent)
-#        fileDayLogWrite.close()
-        
     def saveTrackPoint(self, trackPoint):
         if not os.path.isdir(self.descDir):
             raise TrackPointException('No found directory ' + self.descDir)
-        self.__saveTrackPoint(trackPoint)
-        self.__closeFileWritableOpened()
-    
+        
+        folderDesc = self.__getDailyLogFolderPath(trackPoint)
+        self.__writeReferUriToDaylyLogFolder(trackPoint, folderDesc)
+        
+        fileDayLog = folderDesc + "/" + trackPoint.day + '.log'
+        fileDayLineContent = trackPoint.x + '|' + trackPoint.y + '|' + trackPoint.width + '|' + trackPoint.browser + '|' + trackPoint.c + '\n'
+        fileDayLogWrite = io.FileIO(fileDayLog,'a')
+        fileDayLogWrite.write(fileDayLineContent)
+        fileDayLogWrite.close()
+        
     def saveTrackPoints(self, trackPoints):
         if not os.path.isdir(self.descDir):
             raise TrackPointException('No found directory ' + self.descDir)
 
         for trackPoint in trackPoints:
-            self.__saveTrackPoint(trackPoint)
+            folderDesc = self.__getDailyLogFolderPath(trackPoint)
+            self.__writeReferUriToDaylyLogFolder(trackPoint, folderDesc)
+            
+            fileDayLineContent = trackPoint.x + '|' + trackPoint.y + '|' + trackPoint.width + '|' + trackPoint.browser + '|' + trackPoint.c + '\n'
+            fileDayLog = folderDesc + "/" + trackPoint.day + '.log'
+            fileDayLogWrite = self.__getFileWritableOpenedObject(fileDayLog)
+            fileDayLogWrite = io.FileIO(fileDayLog,'a')
+            fileDayLogWrite.write(fileDayLineContent)
+            
         self.__closeFileWritableOpened()
 
 class ClickHeatLogError(Exception): pass
@@ -174,7 +185,7 @@ class ClickHeatLog(object):
         fileLogProccesed.write(self.fileLog)
         fileLogProccesed.close()
         
-        return self.__parserFileLogImprovePerformance()
+#        return self.__parserFileLogImprovePerformance()
         
 #        fileLogOpen = io.open(self.fileLog)
         fileLogOpen = fileinput.input(self.fileLog)
