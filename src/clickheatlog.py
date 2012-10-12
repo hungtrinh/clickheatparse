@@ -1,13 +1,24 @@
+#!/usr/bin/env python
+# encoding: utf-8
 '''
 Created on Oct 4, 2012
 python vertion 2.7.3
-@author: hungtd
+
+@author:     hungtd
+            
+@copyright:  2012 emc2. All rights reserved.
+            
+
+@contact:    hungtd@emc2.vn
+@deffield    updated: Updated
 '''
+
 import io
 import os
 import re
 import fileinput
-#import sys
+from datetime import datetime, timedelta 
+import ConfigParser  
 
 class ParserLine(object):
     '''
@@ -174,20 +185,19 @@ class ClickHeatLog(object):
         @self.trackPointStore: TrackPointFileStore
         '''
         processLogFilePath = self.trackPointStore.descDir + '/logproccesed.txt'
-        fileLogProccesed = io.FileIO(processLogFilePath,'a+')
+        
+        fileLogProccesed = open(processLogFilePath,'a+')
         lines = fileLogProccesed.readlines()
         
-        
-        if (any(self.fileLog in item for item in lines)):
+        if self.fileLog + '\n' in lines:
             fileLogProccesed.close()
             return None
         
-        fileLogProccesed.write(self.fileLog)
+        fileLogProccesed.write(self.fileLog + '\n')
         fileLogProccesed.close()
         
-#        return self.__parserFileLogImprovePerformance()
+        return self.__parserFileLogImprovePerformance()
         
-#        fileLogOpen = io.open(self.fileLog)
         fileLogOpen = fileinput.input(self.fileLog)
         for line in fileLogOpen:
             trackPoint = self.lineParser.getTrackPoint(line)
@@ -196,9 +206,6 @@ class ClickHeatLog(object):
             self.trackPointStore.saveTrackPoint(trackPoint)
         fileLogOpen.close()
         
-#        fileWriter = io.open(processLogFilePath,'a+')
-#        fileWriter.write(unicode(self.fileLog))
-#        fileWriter.close()
         
     def __parserFileLogImprovePerformance(self):
         fileLogOpen = open(self.fileLog,'r')
@@ -212,3 +219,70 @@ class ClickHeatLog(object):
 #            del trackPoints
 #            del lines
         fileLogOpen.close()
+
+class ApplicationConfigError(Exception): pass
+
+class Application(object):
+    def __init__(self,envirement,configs):
+        self.__evn = envirement
+        
+        if isinstance(configs,str):
+            configs = self.__loadConfig(configs)
+        elif not isinstance(configs, dict):
+            raise ApplicationConfigError('invalid config type')
+        
+        self.__configs = configs    
+            
+    def __loadConfig(self,filePath):
+        assert os.path.exists(filePath)
+        
+        config = ConfigParser.ConfigParser()
+        config.read(filePath)
+        return {'source': config.get(self.getEnv(),'source'), 'desc': config.get(self.getEnv(),'desc')}
+            
+    def getConfigs(self):
+        return self.__configs
+    
+    def getEnv(self):
+        return self.__evn
+    
+    def __convertStrToDate(self,today=None):
+        # @return: datetime.datetime
+        if None == today:
+            return datetime.today()
+        today = today.strip()
+        if '' == today:
+            todayDate = datetime.today()
+        else:
+            todayDate = datetime.strptime(today,'%Y-%m-%d')
+        return todayDate
+
+    def getYesterdayLogFile(self,today=None):
+        '''
+        @todayDate : datetime.datetime
+        '''
+        todayDate = self.__convertStrToDate(today)
+        yesterday = todayDate - timedelta(1)
+        return self.getConfigs()['source'] + "/" + yesterday.strftime('%Y-%m-%d') + '.log'
+   
+    def run(self):
+        fileLog = self.getYesterdayLogFile()
+        descDir = self.getConfigs()['desc']
+        
+        trackPointStoreStrategy = TrackPointFileStore(descDir)
+        trackPointLineParseStrategy = ParserLine()
+        heatClickLog = ClickHeatLog(fileLog, trackPointLineParseStrategy, trackPointStoreStrategy)   
+        heatClickLog.parserFileLog()
+#        raise Exception('loi roi')
+        return 0
+if __name__ == "__main__":
+    import sys; #sys.argv = ['', 'Test.testName']
+#    try: 
+    currentDir = os.path.dirname(__file__)
+    environment = 'testing'
+    configFile = os.path.realpath(currentDir) + '/config.ini'
+    app = Application(environment, configFile)
+    sys.exit(app.run()) 
+#    except Exception:
+#        print "Unexpected error:", sys.exc_info()[0]
+#    sys.exit(1)

@@ -10,7 +10,7 @@ import io
 import shutil
 import linecache
 
-from clickheatlog import ParserLine, TrackPoint, TrackPointFileStore, ClickHeatLog
+from clickheatlog import ParserLine, TrackPoint, TrackPointFileStore, ClickHeatLog, Application
 
 class TestParseLine(unittest.TestCase):
     
@@ -31,9 +31,11 @@ class TestParseLine(unittest.TestCase):
 class TestTrackPointFileStoreSuccess(unittest.TestCase):
 
     def setUp(self):
-        if not os.path.isdir('descStoreTest'): 
-            os.makedirs('descStoreTest');
-        self.descDir = os.path.abspath('descStoreTest')
+        descStoreTest = os.path.realpath(os.path.dirname(__file__)) + '/descStoreTest'
+        if not os.path.isdir(descStoreTest): 
+            os.makedirs(descStoreTest);
+        
+        self.descDir = os.path.realpath(descStoreTest)
         self.trackPointStore = TrackPointFileStore(self.descDir)
         
     def tearDown(self):
@@ -114,8 +116,9 @@ class TestTrackPointFileStoreSuccess(unittest.TestCase):
     
 class TestClickHeatLog(unittest.TestCase):
     def setUp(self):
-        self.fileLog = fileLog = os.path.abspath('100source.log')
-        self.descDir = descDir = os.path.abspath('../test')
+        currentDir = os.path.dirname(__file__)
+        self.fileLog = fileLog = os.path.realpath(currentDir) + '/100source.log'
+        self.descDir = descDir = os.path.realpath(os.path.realpath(currentDir) + '/../test')
         
         trackPointStoreStrategy = TrackPointFileStore(descDir)
         trackPointLineParseStrategy = ParserLine()
@@ -172,8 +175,89 @@ class TestClickHeatLog(unittest.TestCase):
         os.remove(self.descDir + '/logproccesed.txt')
         pass
 
-class TestClickHeatLogBadInput(unittest.TestCase):
-    pass
+from datetime import datetime, timedelta    
+class TestApplicationSuccess(unittest.TestCase):
+    def setUp(self):
+        currentDir = os.path.dirname(__file__)
+        environment = 'testing'
+        self.configFile = os.path.realpath(currentDir) + '/config.ini'
+        self.app = Application(environment, self.configFile)
+        
+    def testGetConfigFile(self):
+        config = self.app.getConfigs()
+        espected = {'source':'/home/guitar/Zend1/workspaces/DefaultWorkspace/clickheat/src',\
+                    'desc':'/home/guitar/Zend1/workspaces/DefaultWorkspace/clickheat/test'}
+        self.assertDictEqual(espected, config)
+        
+    def testChooseYesterdayLogFileSuccess(self):
+        logFilePath = self.app.getYesterdayLogFile('')
+        
+        yesterday = datetime.today() - timedelta(1)
+        yesterdayLogFileExpected = '/home/guitar/Zend1/workspaces/DefaultWorkspace/clickheat/src/' + yesterday.strftime('%Y-%m-%d') + '.log'
+        self.assertEqual(yesterdayLogFileExpected, logFilePath)
+        
+        logFilePath = self.app.getYesterdayLogFile()
+        self.assertEqual(yesterdayLogFileExpected, logFilePath)
+        
+        logFilePath = self.app.getYesterdayLogFile('2012-10-09')
+        yesterdayLogFileExpected = '/home/guitar/Zend1/workspaces/DefaultWorkspace/clickheat/src/2012-10-08.log'
+        self.assertEqual(yesterdayLogFileExpected, logFilePath)
+    
+    def testRun(self):
+        
+        
+        self.descDir = self.app.getConfigs()['desc']
+        
+        dailyLogFilePath = self.descDir + '/mimo,homenonlogin/2012-10-02.log'
+        urlFilePath = self.descDir + '/mimo,homenonlogin/url.txt'
+        urlProfileFilePath = self.descDir + '/mimo,profile/url.txt'
+        processLogFilePath = self.descDir + '/logproccesed.txt'
+        dailyProfileLogFilePath = self.descDir + '/mimo,profile/2012-10-03.log'
+        
+        #before run app
+        self.assertFalse(os.path.exists(self.descDir+'/mimo,homenonlogin'))
+        self.assertFalse(os.path.exists(self.descDir+'/mimo,profile'))
+        
+        #first run app
+        self.app.run()
+        file = open(dailyProfileLogFilePath)
+        profileLines = file.readlines()
+        file.close()
+        
+        file = open(dailyLogFilePath)
+        homeLines = open(dailyLogFilePath)
+        file.close()
+
+        self.assertTrue(os.path.isdir(self.descDir+'/mimo,homenonlogin'))
+        self.assertTrue(os.path.isdir(self.descDir+'/mimo,profile'))
+        self.assertTrue(os.path.isfile(dailyLogFilePath))
+        self.assertTrue(os.path.isfile(dailyProfileLogFilePath))
+
+        self.assertTrue(os.path.isfile(urlProfileFilePath))
+        self.assertTrue(os.path.isfile(urlFilePath))
+        
+        self.assertTrue(os.path.isfile(processLogFilePath))
+        
+        #second run app
+        self.app.run()
+        
+        file = open(dailyProfileLogFilePath)
+        profileLines2 = file.readlines()
+        file.close()
+        
+        file = open(dailyLogFilePath)
+        homeLines2 = open(dailyLogFilePath)
+        file.close()
+#        
+        self.assertEqual(profileLines, profileLines2)
+#        self.assertEqual(homeLines, homeLines2)
+        
+        #delete all test resource
+        descDir = self.app.getConfigs()['desc']
+        shutil.rmtree(descDir + '/mimo,homenonlogin')
+        shutil.rmtree(descDir + '/mimo,profile')
+        os.remove(descDir + '/logproccesed.txt')
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
