@@ -117,7 +117,7 @@ class TestTrackPointFileStoreSuccess(unittest.TestCase):
 class TestClickHeatLog(unittest.TestCase):
     def setUp(self):
         currentDir = os.path.dirname(__file__)
-        self.fileLog = fileLog = os.path.realpath(currentDir) + '/100source.log'
+        self.fileLog = fileLog = os.path.realpath(currentDir) + '/1msource.log'
         self.descDir = descDir = os.path.realpath(os.path.realpath(currentDir) + '/../test')
         
         trackPointStoreStrategy = TrackPointFileStore(descDir)

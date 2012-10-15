@@ -101,7 +101,7 @@ class TrackPointFileStore(object):
         if self.fileDirCache.has_key(filePath): 
             return self.fileDirCache[filePath]
         
-        fileDayLogWrite = io.FileIO(filePath, 'a')
+        fileDayLogWrite = open(filePath, 'a')
        
         self.fileDirCache[filePath] = fileDayLogWrite
         return fileDayLogWrite
@@ -131,7 +131,7 @@ class TrackPointFileStore(object):
         fileUrlContent = trackPoint.referUrl + ">0>0>0"
         
         if not os.path.isfile(fileUrlTxt):
-            fileUrlTxtWrite = io.FileIO(fileUrlTxt, 'w+')
+            fileUrlTxtWrite = open(fileUrlTxt, 'w+')
             fileUrlTxtWrite.write(fileUrlContent)
             fileUrlTxtWrite.close()
         
@@ -144,7 +144,7 @@ class TrackPointFileStore(object):
         
         fileDayLog = folderDesc + "/" + trackPoint.day + '.log'
         fileDayLineContent = trackPoint.x + '|' + trackPoint.y + '|' + trackPoint.width + '|' + trackPoint.browser + '|' + trackPoint.c + '\n'
-        fileDayLogWrite = io.FileIO(fileDayLog,'a')
+        fileDayLogWrite = open(fileDayLog,'a')
         fileDayLogWrite.write(fileDayLineContent)
         fileDayLogWrite.close()
         
@@ -159,7 +159,7 @@ class TrackPointFileStore(object):
             fileDayLineContent = trackPoint.x + '|' + trackPoint.y + '|' + trackPoint.width + '|' + trackPoint.browser + '|' + trackPoint.c + '\n'
             fileDayLog = folderDesc + "/" + trackPoint.day + '.log'
             fileDayLogWrite = self.__getFileWritableOpenedObject(fileDayLog)
-            fileDayLogWrite = io.FileIO(fileDayLog,'a')
+            fileDayLogWrite = open(fileDayLog,'a')
             fileDayLogWrite.write(fileDayLineContent)
             
         self.__closeFileWritableOpened()
@@ -189,14 +189,14 @@ class ClickHeatLog(object):
         fileLogProccesed = open(processLogFilePath,'a+')
         lines = fileLogProccesed.readlines()
         
-        if self.fileLog + '\n' in lines:
+        if not os.path.exists(self.fileLog) or self.fileLog + '\n' in lines:
             fileLogProccesed.close()
             return None
         
         fileLogProccesed.write(self.fileLog + '\n')
         fileLogProccesed.close()
         
-        return self.__parserFileLogImprovePerformance()
+#        return self.__parserFileLogImprovePerformance()
         
         fileLogOpen = fileinput.input(self.fileLog)
         for line in fileLogOpen:
