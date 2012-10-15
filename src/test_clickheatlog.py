@@ -181,7 +181,7 @@ class TestApplicationSuccess(unittest.TestCase):
         currentDir = os.path.dirname(__file__)
         environment = 'testing'
         self.configFile = os.path.realpath(currentDir) + '/config.ini'
-        self.app = Application(environment, self.configFile)
+        self.app = Application(environment, self.configFile, '2012-10-12')
         
     def testGetConfigFile(self):
         config = self.app.getConfigs()

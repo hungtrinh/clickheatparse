@@ -223,8 +223,9 @@ class ClickHeatLog(object):
 class ApplicationConfigError(Exception): pass
 
 class Application(object):
-    def __init__(self,envirement,configs):
+    def __init__(self, envirement, configs, toDayIsoYmd=None):
         self.__evn = envirement
+        self.__today = toDayIsoYmd
         
         if isinstance(configs,str):
             configs = self.__loadConfig(configs)
@@ -246,6 +247,9 @@ class Application(object):
     def getEnv(self):
         return self.__evn
     
+    def getToday(self):
+        return self.__today
+    
     def __convertStrToDate(self,today=None):
         # @return: datetime.datetime
         if None == today:
@@ -266,14 +270,13 @@ class Application(object):
         return self.getConfigs()['source'] + "/" + yesterday.strftime('%Y-%m-%d') + '.log'
    
     def run(self):
-        fileLog = self.getYesterdayLogFile()
+        fileLog = self.getYesterdayLogFile(self.getToday())
         descDir = self.getConfigs()['desc']
         
         trackPointStoreStrategy = TrackPointFileStore(descDir)
         trackPointLineParseStrategy = ParserLine()
         heatClickLog = ClickHeatLog(fileLog, trackPointLineParseStrategy, trackPointStoreStrategy)   
         heatClickLog.parserFileLog()
-#        raise Exception('loi roi')
         return 0
 if __name__ == "__main__":
     import sys; #sys.argv = ['', 'Test.testName']
